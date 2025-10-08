@@ -36,9 +36,16 @@ const productsFullInfo = productsFromServer.map(product => {
 
 export const App = () => {
   const [selectedUser, setSelectedUser] = useState(null);
-  const filteredProducts = selectedUser
-    ? productsFullInfo.filter(p => p.owner?.id === selectedUser.id)
-    : productsFullInfo;
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredProducts = productsFullInfo.filter(product => {
+    const byUser = selectedUser ? product.owner?.id === selectedUser.id : true;
+    const bySearch = product.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+    return byUser && bySearch;
+  });
 
   return (
     <div className="section">
@@ -79,7 +86,8 @@ export const App = () => {
                   type="text"
                   className="input"
                   placeholder="Search"
-                  value="qwe"
+                  value={searchQuery}
+                  onChange={element => setSearchQuery(element.target.value)}
                 />
 
                 <span className="icon is-left">
@@ -92,6 +100,7 @@ export const App = () => {
                     data-cy="ClearButton"
                     type="button"
                     className="delete"
+                    onClick={() => setSearchQuery('')}
                   />
                 </span>
               </p>
@@ -143,92 +152,92 @@ export const App = () => {
         </div>
 
         <div className="box table-container">
-          {filteredProducts.length === 0 && (
+          {filteredProducts.length > 0 ? (
+            <table
+              data-cy="ProductTable"
+              className="table is-striped is-narrow is-fullwidth"
+            >
+              <thead>
+                <tr>
+                  <th>
+                    <span className="is-flex is-flex-wrap-nowrap">
+                      ID
+                      <a href="#/">
+                        <span className="icon">
+                          <i data-cy="SortIcon" className="fas fa-sort" />
+                        </span>
+                      </a>
+                    </span>
+                  </th>
+
+                  <th>
+                    <span className="is-flex is-flex-wrap-nowrap">
+                      Product
+                      <a href="#/">
+                        <span className="icon">
+                          <i data-cy="SortIcon" className="fas fa-sort-down" />
+                        </span>
+                      </a>
+                    </span>
+                  </th>
+
+                  <th>
+                    <span className="is-flex is-flex-wrap-nowrap">
+                      Category
+                      <a href="#/">
+                        <span className="icon">
+                          <i data-cy="SortIcon" className="fas fa-sort-up" />
+                        </span>
+                      </a>
+                    </span>
+                  </th>
+
+                  <th>
+                    <span className="is-flex is-flex-wrap-nowrap">
+                      User
+                      <a href="#/">
+                        <span className="icon">
+                          <i data-cy="SortIcon" className="fas fa-sort" />
+                        </span>
+                      </a>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredProducts.map(product => {
+                  const { category, owner } = product;
+
+                  return (
+                    <tr data-cy="Product" key={product.id}>
+                      <td className="has-text-weight-bold" data-cy="ProductId">
+                        {product.id}
+                      </td>
+                      <td data-cy="ProductName">{product.name}</td>
+                      <td data-cy="ProductCategory">
+                        {category.icon} - {category.title}
+                      </td>
+                      <td
+                        data-cy="ProductUser"
+                        className={
+                          owner?.sex === 'f'
+                            ? 'has-text-danger'
+                            : 'has-text-link'
+                        }
+                      >
+                        {owner.name}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
             <p data-cy="NoMatchingMessage">
               No products matching selected criteria
             </p>
           )}
-
-          <table
-            data-cy="ProductTable"
-            className="table is-striped is-narrow is-fullwidth"
-          >
-            <thead>
-              <tr>
-                <th>
-                  <span className="is-flex is-flex-wrap-nowrap">
-                    ID
-                    <a href="#/">
-                      <span className="icon">
-                        <i data-cy="SortIcon" className="fas fa-sort" />
-                      </span>
-                    </a>
-                  </span>
-                </th>
-
-                <th>
-                  <span className="is-flex is-flex-wrap-nowrap">
-                    Product
-                    <a href="#/">
-                      <span className="icon">
-                        <i data-cy="SortIcon" className="fas fa-sort-down" />
-                      </span>
-                    </a>
-                  </span>
-                </th>
-
-                <th>
-                  <span className="is-flex is-flex-wrap-nowrap">
-                    Category
-                    <a href="#/">
-                      <span className="icon">
-                        <i data-cy="SortIcon" className="fas fa-sort-up" />
-                      </span>
-                    </a>
-                  </span>
-                </th>
-
-                <th>
-                  <span className="is-flex is-flex-wrap-nowrap">
-                    User
-                    <a href="#/">
-                      <span className="icon">
-                        <i data-cy="SortIcon" className="fas fa-sort" />
-                      </span>
-                    </a>
-                  </span>
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredProducts.map(product => {
-                const { category, owner } = product;
-
-                return (
-                  <tr data-cy="Product" key={product.id}>
-                    <td className="has-text-weight-bold" data-cy="ProductId">
-                      {product.id}
-                    </td>
-
-                    <td data-cy="ProductName">{product.name}</td>
-                    <td data-cy="ProductCategory">
-                      {category.icon} - {category.title}
-                    </td>
-
-                    <td
-                      data-cy="ProductUser"
-                      className={
-                        owner?.sex === 'f' ? 'has-text-danger' : 'has-text-link'
-                      }
-                    >
-                      {owner.name}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
