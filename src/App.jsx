@@ -2,9 +2,9 @@
 import React from 'react';
 import './App.scss';
 
-// import usersFromServer from './api/users';
-// import categoriesFromServer from './api/categories';
-// import productsFromServer from './api/products';
+import usersFromServer from './api/users';
+import categoriesFromServer from './api/categories';
+import productsFromServer from './api/products';
 
 // const products = productsFromServer.map((product) => {
 //   const category = null; // find by product.categoryId
@@ -12,6 +12,27 @@ import './App.scss';
 
 //   return null;
 // });
+
+function getCategoryById(categoryId, categories) {
+  return categories.find(c => c.id === categoryId);
+}
+
+function getUserById(userId, users) {
+  return users.find(u => u.id === userId);
+}
+
+const productsFullInfo = productsFromServer.map(product => {
+  const category = getCategoryById(product.categoryId, categoriesFromServer);
+  const owner = category
+    ? getUserById(category.ownerId, usersFromServer)
+    : null;
+
+  return {
+    ...product,
+    category,
+    owner,
+  };
+});
 
 export const App = () => (
   <div className="section">
@@ -23,32 +44,19 @@ export const App = () => (
           <p className="panel-heading">Filters</p>
 
           <p className="panel-tabs has-text-weight-bold">
-            <a
-              data-cy="FilterAllUsers"
-              href="#/"
-            >
+            <a data-cy="FilterAllUsers" href="#/">
               All
             </a>
 
-            <a
-              data-cy="FilterUser"
-              href="#/"
-            >
+            <a data-cy="FilterUser" href="#/">
               User 1
             </a>
 
-            <a
-              data-cy="FilterUser"
-              href="#/"
-              className="is-active"
-            >
+            <a data-cy="FilterUser" href="#/" className="is-active">
               User 2
             </a>
 
-            <a
-              data-cy="FilterUser"
-              href="#/"
-            >
+            <a data-cy="FilterUser" href="#/">
               User 3
             </a>
           </p>
@@ -95,11 +103,7 @@ export const App = () => (
               Category 1
             </a>
 
-            <a
-              data-cy="Category"
-              className="button mr-2 my-1"
-              href="#/"
-            >
+            <a data-cy="Category" className="button mr-2 my-1" href="#/">
               Category 2
             </a>
 
@@ -110,11 +114,7 @@ export const App = () => (
             >
               Category 3
             </a>
-            <a
-              data-cy="Category"
-              className="button mr-2 my-1"
-              href="#/"
-            >
+            <a data-cy="Category" className="button mr-2 my-1" href="#/">
               Category 4
             </a>
           </div>
@@ -145,7 +145,6 @@ export const App = () => (
               <th>
                 <span className="is-flex is-flex-wrap-nowrap">
                   ID
-
                   <a href="#/">
                     <span className="icon">
                       <i data-cy="SortIcon" className="fas fa-sort" />
@@ -157,7 +156,6 @@ export const App = () => (
               <th>
                 <span className="is-flex is-flex-wrap-nowrap">
                   Product
-
                   <a href="#/">
                     <span className="icon">
                       <i data-cy="SortIcon" className="fas fa-sort-down" />
@@ -169,7 +167,6 @@ export const App = () => (
               <th>
                 <span className="is-flex is-flex-wrap-nowrap">
                   Category
-
                   <a href="#/">
                     <span className="icon">
                       <i data-cy="SortIcon" className="fas fa-sort-up" />
@@ -181,7 +178,6 @@ export const App = () => (
               <th>
                 <span className="is-flex is-flex-wrap-nowrap">
                   User
-
                   <a href="#/">
                     <span className="icon">
                       <i data-cy="SortIcon" className="fas fa-sort" />
@@ -193,53 +189,31 @@ export const App = () => (
           </thead>
 
           <tbody>
-            <tr data-cy="Product">
-              <td className="has-text-weight-bold" data-cy="ProductId">
-                1
-              </td>
+            {productsFullInfo.map(product => {
+              const { category, owner } = product;
 
-              <td data-cy="ProductName">Milk</td>
-              <td data-cy="ProductCategory">🍺 - Drinks</td>
+              return (
+                <tr data-cy="Product">
+                  <td className="has-text-weight-bold" data-cy="ProductId">
+                    {product.id}
+                  </td>
 
-              <td
-                data-cy="ProductUser"
-                className="has-text-link"
-              >
-                Max
-              </td>
-            </tr>
+                  <td data-cy="ProductName">{product.name}</td>
+                  <td data-cy="ProductCategory">
+                    {category.icon} - {category.title}
+                  </td>
 
-            <tr data-cy="Product">
-              <td className="has-text-weight-bold" data-cy="ProductId">
-                2
-              </td>
-
-              <td data-cy="ProductName">Bread</td>
-              <td data-cy="ProductCategory">🍞 - Grocery</td>
-
-              <td
-                data-cy="ProductUser"
-                className="has-text-danger"
-              >
-                Anna
-              </td>
-            </tr>
-
-            <tr data-cy="Product">
-              <td className="has-text-weight-bold" data-cy="ProductId">
-                3
-              </td>
-
-              <td data-cy="ProductName">iPhone</td>
-              <td data-cy="ProductCategory">💻 - Electronics</td>
-
-              <td
-                data-cy="ProductUser"
-                className="has-text-link"
-              >
-                Roma
-              </td>
-            </tr>
+                  <td
+                    data-cy="ProductUser"
+                    className={
+                      owner?.sex === 'f' ? 'has-text-danger' : 'has-text-link'
+                    }
+                  >
+                    {owner.name}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
