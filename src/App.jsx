@@ -13,6 +13,14 @@ import productsFromServer from './api/products';
 //   return null;
 // });
 
+const SORTABLE_COLUMNS = ['id', 'name', 'category', 'user'];
+const COLUMN_LABELS = {
+  id: 'ID',
+  name: 'Product',
+  category: 'Category',
+  user: 'User',
+};
+
 function getCategoryById(categoryId, categories) {
   return categories.find(c => c.id === categoryId);
 }
@@ -37,19 +45,78 @@ const productsFullInfo = productsFromServer.map(product => {
 export const App = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
+
+  const pickedCategories = categoryId => {
+    setSelectedCategories(
+      prev =>
+        prev.includes(categoryId)
+          ? prev.filter(id => id !== categoryId)
+          : [...prev, categoryId],
+      // eslint-disable-next-line function-paren-newline
+    );
+  };
 
   const filteredProducts = productsFullInfo.filter(product => {
     const byUser = selectedUser ? product.owner?.id === selectedUser.id : true;
     const bySearch = product.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
+    const byCategory =
+      selectedCategories.length > 0
+        ? selectedCategories.includes(product.category?.id)
+        : true;
 
-    return byUser && bySearch;
+    return byUser && bySearch && byCategory;
   });
 
   const handleResetAll = () => {
     setSelectedUser(null);
     setSearchQuery('');
+    setSelectedCategories([]);
+    setSortColumn(null);
+    setSortOrder(null);
+  };
+
+  const handleSorting = newColumn => {
+    if (sortColumn !== newColumn) {
+      setSortColumn(newColumn);
+      setSortOrder('asc');
+    } else if (sortOrder === 'asc') {
+      setSortOrder('desc');
+    } else {
+      setSortColumn(null);
+      setSortOrder(null);
+    }
+  };
+
+  const sortedProducts = [...filteredProducts];
+
+  if (sortColumn) {
+    sortedProducts.sort((product1, product2) => {
+      switch (sortColumn) {
+        case 'id':
+          return product1.id - product2.id;
+
+        case 'name':
+          return product1.name.localeCompare(product2.name);
+
+        case 'category':
+          return product1.category.title.localeCompare(product2.category.title);
+
+        case 'user':
+          return product1.owner.name.localeCompare(product2.owner.name);
+
+        default:
+          throw new Error('Unknown value in sortColumn');
+      }
+    });
+
+    if (sortOrder === 'desc') {
+      sortedProducts.reverse();
+    }
   }
 
   return (
@@ -99,15 +166,16 @@ export const App = () => {
                   <i className="fas fa-search" aria-hidden="true" />
                 </span>
 
-                <span className="icon is-right">
-                  {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                  <button
-                    data-cy="ClearButton"
-                    type="button"
-                    className="delete"
-                    onClick={() => setSearchQuery('')}
-                  />
-                </span>
+                {searchQuery && (
+                  <span className="icon is-right">
+                    <button
+                      data-cy="ClearButton"
+                      type="button"
+                      className="delete"
+                      onClick={() => setSearchQuery('')}
+                    />
+                  </span>
+                )}
               </p>
             </div>
 
@@ -116,32 +184,28 @@ export const App = () => {
                 href="#/"
                 data-cy="AllCategories"
                 className="button is-success mr-6 is-outlined"
+                onClick={element => {
+                  element.preventDefault();
+                  setSelectedCategories([]);
+                }}
               >
                 All
               </a>
 
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 1
-              </a>
-
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 2
-              </a>
-
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 3
-              </a>
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 4
-              </a>
+              {categoriesFromServer.map(category => (
+                <a
+                  key={category.id}
+                  data-cy="Category"
+                  className={`button mr-2 my-1 ${selectedCategories.includes(category.id) ? 'is-info' : ''}`}
+                  onClick={element => {
+                    element.preventDefault();
+                    pickedCategories(category.id);
+                  }}
+                  href="#/"
+                >
+                  {category.title}
+                </a>
+              ))}
             </div>
 
             <div className="panel-block">
@@ -158,61 +222,38 @@ export const App = () => {
         </div>
 
         <div className="box table-container">
-          {filteredProducts.length > 0 ? (
+          {sortedProducts.length > 0 ? (
             <table
               data-cy="ProductTable"
               className="table is-striped is-narrow is-fullwidth"
             >
               <thead>
                 <tr>
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      ID
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                  {SORTABLE_COLUMNS.map(column => {
+                    let iconClass = 'fa-sort';
 
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Product
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-down" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                    if (sortColumn === column && sortOrder === 'asc') {
+                      iconClass = 'fa-sort-up';
+                    } else if (sortColumn === column && sortOrder === 'desc') {
+                      iconClass = 'fa-sort-down';
+                    }
 
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Category
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-up" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      User
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                    return (
+                      <th
+                        key={column}
+                        onClick={() => handleSorting(column)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {COLUMN_LABELS[column]}{' '}
+                        <i className={`fas ${iconClass}`} />
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
 
               <tbody>
-                {filteredProducts.map(product => {
+                {sortedProducts.map(product => {
                   const { category, owner } = product;
 
                   return (
